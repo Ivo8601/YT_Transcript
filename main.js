@@ -21,7 +21,7 @@ this.mmooc.youtube = function() {
 		  href = href + "&name=" + name;
 		}
 
-			//Array of captions in video
+		//Array of captions in video
 		var captionsLoaded = false;
 
 		//Timeout for next caption
@@ -68,14 +68,52 @@ this.mmooc.youtube = function() {
 		var clearCurrentHighlighting = function()
 		{
 			var timeStampId = getTimeIdFromTimestampIndex(currentCaptionIndex);
-			$("#"+timeStampId).css('background-color', '');
+			$("#"+timeStampId).removeClass('captionContainer');
 		}
 
-		var highlightNextCaption = function ()
-		{
-			var timestampId = getTimeIdFromTimestampIndex(nextCaptionIndex);
-			$("#"+timestampId).css('background-color', 'yellow');
-		}
+    
+        var highlightNextCaption = function () {
+            var timestampId = getTimeIdFromTimestampIndex(nextCaptionIndex),
+                $currentTimeStamp = $("#" + timestampId),
+                $captionsContainer = $currentTimeStamp.parent(),
+                captionsContainerHeight = $captionsContainer.height(),
+                parentOffsetTop = $captionsContainer.offset().top,
+                currentTimeStampOffsetTop = $currentTimeStamp.offset().top - parentOffsetTop,
+                currentTimeStampHeight = $currentTimeStamp.innerHeight();
+            // comment/uncomment both scenarios in order to observe the behaviour (bith valid nontheless)
+            // scrollTo transition will only fire the  when the target el offset is > than the required minimum visibility amount
+            // if (currentTimeStampOffsetTop > captionsContainerHeight - currentTimeStampHeight) {
+            //  $captionsContainer.stop().animate({
+            //      scrollTop: currentTimeStampOffsetTop + $captionsContainer.scrollTop() - currentTimeStampHeight
+            //  }, 1000);
+            // }
+            // the scrollTo transition will always fire bringing the current highlighted el in view
+            $captionsContainer.stop().animate({
+                scrollTop: currentTimeStampOffsetTop + $captionsContainer.scrollTop() - currentTimeStampHeight
+            }, 1000);
+            $currentTimeStamp.addClass('captionContainer');
+            //Scroll
+            //  var x = $('.btnSeek').offset();
+            //  console.log(x.top);
+            //  if (x == (x.top / $('.captionContainer'))) {
+            //      var div = $('.captionContainer');
+            //      setInterval(function () {
+            //          var pos = div.scrollTop();
+            //          div.scrollTop(pos + 1);
+            //      }, 100);
+            //  }
+        
+            //  //Speed scroll (infinite)
+            //     /*
+            //         var div = $('.transcripts');
+            //         setInterval(function() {
+            //         var pos = div.scrollTop();
+            //         div.scrollTop(pos + 1);
+            //   }, 200);
+            //   */
+        }
+
+
 
 		var calculateTimeout = function (currentTime)
 		{
@@ -123,8 +161,7 @@ this.mmooc.youtube = function() {
 			return "t" + strTimestamp;
 		}
 
-
-		//////////////////
+        //////////////////
 		//Public functions
 		/////////////////
 
@@ -167,19 +204,19 @@ this.mmooc.youtube = function() {
 				timeoutValue = calculateTimeout(currentTime);
 			}
 			this.setCaptionTimeout(timeoutValue);
-		}   
-
+        }  
+        
 		this.transcriptLoaded = function(transcript) {
 			var start = 0;
 			captions = transcript.getElementsByTagName('text');
 			var srt_output = "<div class='btnSeek' id='btnSeek' data-seek='0'>0:00</div>";
-
+           
 			for (var i = 0, il = captions.length; i < il; i++) {
 				start =+ getStartTimeFromCaption(i);
 
 				captionText = captions[i].textContent.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 				var timestampId = getTimeIdFromTimestampIndex(i);
-				srt_output += "<span class='btnSeek' data-seek='" + start + "' id='" + timestampId + "'>" + captionText + "</span> ";
+				srt_output +=  "<div class='btnSeek' data-seek='" + start + "' id='" + timestampId + "'>" + '<div>' + start + '</div>' + captionText + "</div> ";
 			};
 
 			$("#videoTranscript" + videoId).append(srt_output);
@@ -235,10 +272,10 @@ this.mmooc.youtube = function() {
 	$(function() {
 		$(document).on('click', '.btnSeek', function() {
 			var seekToTime = $(this).data('seek');
-			var transcript = mmooc.youtube.getTranscriptFromTranscriptId($(this).parent().attr("id"));
+            var transcript = mmooc.youtube.getTranscriptFromTranscriptId($(this).parent().attr("id"));
 			transcript.player.seekTo(seekToTime, true);
 			transcript.player.playVideo();
-		});
+        });
 	});
 
 	//These functions must be global as YouTube API will call them. 
@@ -260,7 +297,7 @@ this.mmooc.youtube = function() {
 	//    The function indicates that when playing a video (state=1),
 	//    the player should play for six seconds and then stop.
 	window.onPlayerStateChange = function(event) {
-		console.log("onPlayerStateChange " + event.data);
+        console.log("onPlayerStateChange " + event.data);
 		var transcript = this.mmooc.youtube.getTranscriptFromVideoId(event.target.getIframe().id);
 		if (event.data == YT.PlayerState.PLAYING) {
 			transcript.playerPlaying();
